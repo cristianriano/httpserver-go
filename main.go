@@ -18,16 +18,40 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Listening on %s\n", listener.Addr())
+	fmt.Printf("Listening on %s\n\n", listener.Addr())
+	go listen(listener)
 
-	ticker := time.NewTicker(10 * time.Second)
+	<-ctx.Done()
+	listener.Close()
+	fmt.Printf("Stopped: %v", ctx.Err())
+}
+
+func listen(listener net.Listener) {
 	for {
-		select {
-		case <-ctx.Done():
-			listener.Close()
-			fmt.Printf("Stopped: %v", ctx.Err())
-		case <-ticker.C:
-			fmt.Println("Listening...")
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Printf("Error accepting conn: %v", err)
 		}
+
+		fmt.Printf("Accepted conn %s\n", conn.RemoteAddr())
+		go processConn(conn)
 	}
+}
+
+func processConn(conn net.Conn) {
+	time.Sleep(10 * time.Second)
+
+	stream := make([]byte, 10)
+	n, err := conn.Read(stream)
+
+	if err != nil {
+		fmt.Printf("Error reading %s\n", conn.RemoteAddr())
+		conn.Close()
+	}
+
+	if n > 0 {
+		fmt.Printf("[%s]: %s\n", conn.RemoteAddr(), stream)
+	}
+	fmt.Printf("Closing %s\n\n", conn.RemoteAddr())
+	conn.Close()
 }
