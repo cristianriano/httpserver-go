@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	defaultBufferSize = 1024
+)
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
@@ -39,19 +43,29 @@ func listen(listener net.Listener) {
 }
 
 func processConn(conn net.Conn) {
-	time.Sleep(10 * time.Second)
+	for {
+		stream := make([]byte, defaultBufferSize)
+		conn.SetDeadline(time.Now().Add(5 * time.Second))
 
-	stream := make([]byte, 10)
-	n, err := conn.Read(stream)
+		_, err := conn.Read(stream)
 
-	if err != nil {
-		fmt.Printf("Error reading %s\n", conn.RemoteAddr())
-		conn.Close()
+		if err != nil {
+			fmt.Printf("Error reading %s\n", conn.RemoteAddr())
+			break
+		}
+
+		for i, c := range stream {
+			if c == '#' {
+				fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream[0:i])
+				fmt.Printf("'#' sent by %s. Connection closed\n\n", conn.LocalAddr())
+				conn.Close()
+				return
+			}
+		}
+
+		fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream)
 	}
 
-	if n > 0 {
-		fmt.Printf("[%s]: %s\n", conn.RemoteAddr(), stream)
-	}
-	fmt.Printf("Closing %s\n\n", conn.RemoteAddr())
+	fmt.Printf("Connection close by server %s\n\n", conn.RemoteAddr())
 	conn.Close()
 }
