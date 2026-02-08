@@ -1,6 +1,6 @@
 # HTTP Server
 
-This repo aims as a "learning lab" to build a minimal HTTP server from scratch using low level primitives to better
+This repo acts as a "learning lab" to build a minimal HTTP server from scratch using low level primitives to better
 understand:
 
 - TCP networking
