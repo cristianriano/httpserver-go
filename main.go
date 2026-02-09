@@ -75,8 +75,9 @@ func listen(listener net.Listener) {
 }
 
 func processConn(conn net.Conn) {
+	stream := make([]byte, defaultBufferSize)
+
 	for {
-		stream := make([]byte, defaultBufferSize)
 		conn.SetDeadline(time.Now().Add(connectionDeadline))
 
 		n, err := conn.Read(stream)
@@ -91,7 +92,7 @@ func processConn(conn net.Conn) {
 			if c == '#' {
 				conn.Write(stream[0:i])
 
-				slog.Info("Message received", "addr", conn.RemoteAddr(), "msg", stream[0:i])
+				slog.Debug("Message received", "addr", conn.RemoteAddr(), "msg", stream[0:i])
 				slog.Debug("Connection closed", "addr", conn.RemoteAddr())
 
 				conn.Close()
@@ -100,6 +101,6 @@ func processConn(conn net.Conn) {
 		}
 
 		conn.Write(stream[0:n])
-		slog.Info("Received", "addr", conn.RemoteAddr(), "msg", stream[0:n])
+		slog.Debug("Received", "addr", conn.RemoteAddr(), "msg", stream[0:n])
 	}
 }

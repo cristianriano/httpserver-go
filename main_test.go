@@ -55,4 +55,30 @@ func TestStart(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "Hello", string(stream[0:n]))
 	})
+
+	t.Run("Start when message sent is bigger than buffer size", func(t *testing.T) {
+		// Use a random port assigned by the OS
+		listener, err := Start(context.TODO(), addr)
+		require.NoError(t, err)
+		defer listener.Close()
+
+		conn, err := net.Dial("tcp", listener.Addr().String())
+		require.NoError(t, err)
+
+		conn.SetDeadline(time.Now().Add(100 * time.Millisecond))
+
+		packet := make([]byte, defaultBufferSize+1)
+		for i := range packet {
+			packet[i] = '1'
+		}
+
+		n, err := conn.Write(packet)
+		require.NoError(t, err)
+		assert.Greater(t, n, 0)
+
+		stream := make([]byte, defaultBufferSize+2)
+		n, err = conn.Read(stream)
+		assert.Equal(t, n, defaultBufferSize+1)
+		conn.Close()
+	})
 }
