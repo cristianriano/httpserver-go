@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log/slog"
 	"net"
@@ -58,7 +59,14 @@ func listen(listener net.Listener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			// Check if the error is because we intentionally closed the listener
+			if errors.Is(err, net.ErrClosed) {
+				slog.Debug("Listener closed, shutting down accept loop")
+				return
+			}
+
 			slog.Error("Error accepting connections", "err", err)
+			continue
 		}
 
 		slog.Debug("Accepted conn", "addr", conn.RemoteAddr())
