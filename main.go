@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"net"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -15,6 +17,17 @@ const (
 )
 
 func main() {
+	debugMode := flag.Bool("debug", false, "enable debug logging")
+	flag.Parse()
+
+	logOpts := &slog.HandlerOptions{Level: slog.LevelInfo}
+	if *debugMode {
+		logOpts.Level = slog.LevelDebug
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, logOpts))
+	slog.SetDefault(logger)
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
