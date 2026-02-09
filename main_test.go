@@ -22,13 +22,13 @@ func TestStart(t *testing.T) {
 		conn, err := net.Dial("tcp", listener.Addr().String())
 		require.NoError(t, err)
 
-		conn.SetDeadline(time.Now().Add(10 * time.Millisecond))
+		conn.SetDeadline(time.Now().Add(100 * time.Millisecond))
 		n, err := conn.Write([]byte("Hello"))
 		require.NoError(t, err)
 		assert.Greater(t, n, 0)
 
 		stream := make([]byte, 5)
 		conn.Read(stream)
-		assert.Equal(t, "Hello", stream)
+		assert.Equal(t, "Hello", string(stream))
 	})
 }

@@ -58,15 +58,17 @@ func processConn(conn net.Conn) {
 		stream := make([]byte, defaultBufferSize)
 		conn.SetDeadline(time.Now().Add(connectionDeadline))
 
-		_, err := conn.Read(stream)
+		n, err := conn.Read(stream)
 
 		if err != nil {
 			fmt.Printf("Error reading %s\n", conn.RemoteAddr())
-			break
+			conn.Close()
+			return
 		}
 
 		for i, c := range stream {
 			if c == '#' {
+				conn.Write(stream[0:i])
 				fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream[0:i])
 				fmt.Printf("'#' sent by %s. Connection closed\n\n", conn.LocalAddr())
 				conn.Close()
@@ -74,9 +76,7 @@ func processConn(conn net.Conn) {
 			}
 		}
 
+		conn.Write(stream[0:n])
 		fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream)
 	}
-
-	fmt.Printf("Connection close by server %s\n\n", conn.RemoteAddr())
-	conn.Close()
 }
