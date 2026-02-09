@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net"
 	"os/signal"
 	"syscall"
@@ -25,7 +25,7 @@ func main() {
 
 	<-ctx.Done()
 	listener.Close()
-	fmt.Printf("Stopped: %v", ctx.Err())
+	slog.Debug("Stopped", "err", ctx.Err())
 }
 
 func Start(ctx context.Context, addr string) (net.Listener, error) {
@@ -35,7 +35,7 @@ func Start(ctx context.Context, addr string) (net.Listener, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Listening on %s\n\n", listener.Addr())
+	slog.Debug("Started", "addr", listener.Addr())
 	go listen(listener)
 
 	return listener, nil
@@ -45,10 +45,10 @@ func listen(listener net.Listener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Error accepting conn: %v", err)
+			slog.Error("Error accepting connections", "err", err)
 		}
 
-		fmt.Printf("Accepted conn %s\n", conn.RemoteAddr())
+		slog.Debug("Accepted conn", "addr", conn.RemoteAddr())
 		go processConn(conn)
 	}
 }
@@ -61,7 +61,7 @@ func processConn(conn net.Conn) {
 		n, err := conn.Read(stream)
 
 		if err != nil {
-			fmt.Printf("Error reading %s\n", conn.RemoteAddr())
+			slog.Error("Error reading", "err", err, "addr", conn.RemoteAddr())
 			conn.Close()
 			return
 		}
@@ -69,14 +69,16 @@ func processConn(conn net.Conn) {
 		for i, c := range stream {
 			if c == '#' {
 				conn.Write(stream[0:i])
-				fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream[0:i])
-				fmt.Printf("'#' sent by %s. Connection closed\n\n", conn.LocalAddr())
+
+				slog.Info("Message received", "addr", conn.RemoteAddr(), "msg", stream[0:i])
+				slog.Debug("Connection closed", "addr", conn.RemoteAddr())
+
 				conn.Close()
 				return
 			}
 		}
 
 		conn.Write(stream[0:n])
-		fmt.Printf("[%s]: %s", conn.RemoteAddr(), stream)
+		slog.Info("Received", "addr", conn.RemoteAddr(), "msg", stream[0:n])
 	}
 }
