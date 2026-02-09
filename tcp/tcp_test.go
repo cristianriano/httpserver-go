@@ -1,4 +1,4 @@
-package main
+package tcp
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func TestStart(t *testing.T) {
 
 		conn.SetDeadline(time.Now().Add(100 * time.Millisecond))
 
-		packet := make([]byte, defaultBufferSize+1)
+		packet := make([]byte, defaultBufferSize+10)
 		for i := range packet {
 			packet[i] = '1'
 		}
@@ -80,9 +80,13 @@ func TestStart(t *testing.T) {
 		require.NoError(t, err)
 		assert.Greater(t, n, 0)
 
+		// It will write twice
 		stream := make([]byte, defaultBufferSize*2)
 		n, err = conn.Read(stream)
-		assert.Equal(t, n, defaultBufferSize+1)
+		assert.Equal(t, defaultBufferSize, n)
+
+		n, err = conn.Read(stream)
+		assert.Equal(t, 10, n)
 	})
 
 	t.Run("It keeps memory isolated for concurrent clients", func(t *testing.T) {
